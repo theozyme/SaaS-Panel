@@ -1,5 +1,6 @@
 from pathlib import Path
 from datetime import timedelta
+from corsheaders.defaults import default_headers
 import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -18,6 +19,9 @@ INSTALLED_APPS = [
     "modules_jobs",
     "modules_payments",
     "modules_appointments",
+    "modules_inventory",
+    "modules_reports",
+
 
 
     # 3rd party
@@ -93,6 +97,7 @@ REST_FRAMEWORK = {
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Vite dev server için
+    "http://127.0.0.1:5173",
 ]
 
 SIMPLE_JWT = {
@@ -100,3 +105,6 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "x-tenant-id",
+]

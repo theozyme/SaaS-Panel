@@ -18,7 +18,13 @@ urlpatterns = [
 
     # Payments  
     path("api/", include("modules_payments.urls")),
-    
+
     # Appointments
     path("api/", include("modules_appointments.urls")),
+    # Inventory
+    path("api/", include("modules_inventory.urls")),
+    # Reports
+    path("api/", include("modules_reports.urls")),
+
+
 ]
