@@ -1,41 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { http } from "../lib/http";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import Textarea from "../components/ui/Textarea";
+import Select from "../components/ui/Select";
+import Modal from "../components/ui/Modal";
 
 const STATUS_OPTIONS = [
-  { value: "open", label: "Açık" },
+  { value: "open",        label: "Açık" },
   { value: "in_progress", label: "Devam" },
-  { value: "done", label: "Tamam" },
-  { value: "canceled", label: "İptal" },
+  { value: "done",        label: "Tamam" },
+  { value: "canceled",    label: "İptal" },
 ];
-
-function Modal({ open, title, children, onClose }) {
-  if (!open) return null;
-  return (
-    <div style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,.5)",
-      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50
-    }}>
-      <div style={{ background: "#fff", color: "#111", borderRadius: 12, width: 520, maxWidth: "90%", padding: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ margin: 0 }}>{title}</h3>
-          <button onClick={onClose}>Kapat</button>
-        </div>
-        <div style={{ marginTop: 12 }}>{children}</div>
-      </div>
-    </div>
-  );
-}
 
 export default function Jobs() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  // modal state
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState(null); // job objesi ya da null
+  const [editing, setEditing] = useState(null);
 
-  // form state
   const [customerName, setCustomerName] = useState("");
   const [description, setDescription] = useState("");
   const [total, setTotal] = useState("");
@@ -52,11 +37,7 @@ export default function Jobs() {
     setEditing(null);
   };
 
-  const openCreate = () => {
-    resetForm();
-    setOpen(true);
-  };
-
+  const openCreate = () => { resetForm(); setOpen(true); };
   const openEdit = (job) => {
     setEditing(job);
     setCustomerName(job.customer_name || "");
@@ -93,11 +74,8 @@ export default function Jobs() {
         total: total === "" ? 0 : Number(total),
         status,
       };
-      if (editing) {
-        await http.patch(`/jobs/${editing.id}/`, payload);
-      } else {
-        await http.post("/jobs/", payload);
-      }
+      if (editing) await http.patch(`/jobs/${editing.id}/`, payload);
+      else        await http.post("/jobs/", payload);
       setOpen(false);
       resetForm();
       fetchList();
@@ -109,8 +87,7 @@ export default function Jobs() {
   };
 
   const onDelete = async (job) => {
-    const ok = confirm(`Silinsin mi?\nMüşteri: ${job.customer_name}`);
-    if (!ok) return;
+    if (!confirm(`Silinsin mi?\nMüşteri: ${job.customer_name}`)) return;
     try {
       await http.delete(`/jobs/${job.id}/`);
       fetchList();
@@ -122,43 +99,53 @@ export default function Jobs() {
   const rows = useMemo(() => list, [list]);
 
   return (
-    <div style={{ fontFamily: "system-ui" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-        <h2 style={{ margin: 0 }}>İş Emirleri</h2>
-        <button onClick={openCreate}>+ Yeni İş Emri</button>
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-2xl font-semibold">İş Emirleri</h2>
+        <Button onClick={openCreate}>+ Yeni İş Emri</Button>
       </div>
 
-      {err && <p style={{ color: "crimson" }}>Hata: {err}</p>}
+      {err && <p className="text-red-400">Hata: {err}</p>}
+
       {loading ? (
         <p>Yükleniyor…</p>
       ) : rows.length === 0 ? (
-        <div style={{ padding: 16, border: "1px dashed #999", borderRadius: 8 }}>
-          Henüz kayıt yok. <button onClick={openCreate}>İlk kaydı oluştur</button>
+        <div className="card p-4 text-[var(--muted)]">
+          Henüz kayıt yok.
+          <Button variant="ghost" className="ml-2" onClick={openCreate}>
+            İlk kaydı oluştur
+          </Button>
         </div>
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div className="card overflow-hidden">
+          <table className="table">
             <thead>
-              <tr style={{ textAlign: "left", borderBottom: "1px solid #333" }}>
-                <th style={{ padding: 8 }}>Müşteri</th>
-                <th style={{ padding: 8 }}>Açıklama</th>
-                <th style={{ padding: 8, width: 120 }}>Tutar (₺)</th>
-                <th style={{ padding: 8, width: 140 }}>Durum</th>
-                <th style={{ padding: 8, width: 160 }}>İşlem</th>
+              <tr>
+                <th>Müşteri</th>
+                <th>Açıklama</th>
+                <th className="w-28">Tutar</th>
+                <th className="w-32">Durum</th>
+                <th className="w-40">İşlem</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} style={{ borderBottom: "1px solid #222" }}>
-                  <td style={{ padding: 8 }}>{r.customer_name}</td>
-                  <td style={{ padding: 8, color: "#bbb" }}>{r.description || "-"}</td>
-                  <td style={{ padding: 8 }}>{r.total}</td>
-                  <td style={{ padding: 8 }}>
-                    {STATUS_OPTIONS.find(s => s.value === r.status)?.label || r.status}
+                <tr key={r.id}>
+                  <td>{r.customer_name}</td>
+                  <td className="text-[var(--muted)]">{r.description || "-"}</td>
+                  <td>{r.total}</td>
+                  <td>
+                    <span className="badge">
+                      {STATUS_OPTIONS.find(s => s.value === r.status)?.label || r.status}
+                    </span>
                   </td>
-                  <td style={{ padding: 8 }}>
-                    <button onClick={() => openEdit(r)} style={{ marginRight: 8 }}>Düzenle</button>
-                    <button onClick={() => onDelete(r)}>Sil</button>
+                  <td>
+                    <Button variant="ghost" className="mr-2" onClick={() => openEdit(r)}>
+                      Düzenle
+                    </Button>
+                    <Button variant="danger" onClick={() => onDelete(r)}>
+                      Sil
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -168,55 +155,39 @@ export default function Jobs() {
       )}
 
       <Modal open={open} title={editing ? "İş Emri Düzenle" : "Yeni İş Emri"} onClose={() => setOpen(false)}>
-        <form onSubmit={onSubmit}>
-          <label style={{ display: "block", marginTop: 8 }}>Müşteri Adı</label>
-          <input
-            style={{ width: "100%", padding: 8 }}
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            required
-          />
+        <form onSubmit={onSubmit} className="space-y-3">
+          <div>
+            <label className="text-sm text-[var(--muted)]">Müşteri Adı</label>
+            <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} required />
+          </div>
 
-          <label style={{ display: "block", marginTop: 8 }}>Açıklama</label>
-          <textarea
-            style={{ width: "100%", padding: 8 }}
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
+          <div>
+            <label className="text-sm text-[var(--muted)]">Açıklama</label>
+            <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+          </div>
 
-          <div style={{ display: "flex", gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", marginTop: 8 }}>Tutar (₺)</label>
-              <input
-                style={{ width: "100%", padding: 8 }}
-                type="number"
-                step="0.01"
-                value={total}
-                onChange={(e) => setTotal(e.target.value)}
-              />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm text-[var(--muted)]">Tutar (₺)</label>
+              <Input type="number" step="0.01" value={total} onChange={(e) => setTotal(e.target.value)} />
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", marginTop: 8 }}>Durum</label>
-              <select
-                style={{ width: "100%", padding: 8 }}
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
+            <div>
+              <label className="text-sm text-[var(--muted)]">Durum</label>
+              <Select value={status} onChange={(e) => setStatus(e.target.value)}>
                 {STATUS_OPTIONS.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
 
-          {formErr && <p style={{ color: "crimson", marginTop: 8 }}>Hata: {formErr}</p>}
+          {formErr && <p className="text-red-500">{formErr}</p>}
 
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
-            <button type="button" onClick={() => setOpen(false)}>Vazgeç</button>
-            <button type="submit" disabled={saving}>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Vazgeç</Button>
+            <Button type="submit" disabled={saving}>
               {saving ? "Kaydediliyor..." : (editing ? "Güncelle" : "Oluştur")}
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>

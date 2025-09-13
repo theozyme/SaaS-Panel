@@ -1,46 +1,52 @@
-// src/components/Layout.jsx
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import { http, clearAuth } from "../lib/http";
+import Button from "./ui/Button";
 
 export default function Layout() {
   const [modules, setModules] = useState([]);
+  const [tenantName, setTenantName] = useState("");
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const nav = useNavigate();
 
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        const { data } = await http.get("/modules/active");
-        setModules(data.modules || []);
-      } catch (e) {
-        setErr(e?.response?.data?.detail || "Menü yüklenemedi");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  const logout = () => {
-    clearAuth();
-    nav("/login", { replace: true });
+  const loadModules = async () => {
+    const { data } = await http.get("/modules/active");
+    setModules(data.modules || []);
+  };
+  const loadTenant = async () => {
+    const { data } = await http.get("/tenant/profile");
+    setTenantName(data?.tenant?.name || "");
   };
 
+  useEffect(() => {
+    (async () => {
+      try { setLoading(true); await Promise.all([loadModules(), loadTenant()]); setErr(""); }
+      catch (e) { setErr(e?.response?.data?.detail || "Veri yüklenemedi"); }
+      finally { setLoading(false); }
+    })();
+    const onRefresh = () => loadModules().catch(() => {});
+    window.addEventListener("modules-refresh", onRefresh);
+    return () => window.removeEventListener("modules-refresh", onRefresh);
+  }, []);
+
+  const logout = () => { clearAuth(); nav("/login", { replace: true }); };
+
   return (
-    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "system-ui" }}>
+    <div className="min-h-screen flex">
       <Sidebar modules={modules} />
-      <main style={{ flex: 1, padding: 20 }}>
-        <header style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-          <div>
-            <strong>Panel</strong> {loading ? "• yükleniyor..." : ""}
-            {err && <span style={{ color: "crimson", marginLeft: 8 }}>({err})</span>}
+      <main className="flex-1 p-6">
+        <header className="flex items-center justify-between mb-6">
+          <div className="text-lg font-semibold">
+            {tenantName || "Panel"} {loading && <span className="text-[var(--muted)]">• yükleniyor…</span>}
+            {err && <span className="text-red-400 ml-2">({err})</span>}
           </div>
-          <button onClick={logout}>Çıkış</button>
+          <Button variant="ghost" onClick={logout}>Çıkış</Button>
         </header>
-        <Outlet />
+        <div className="space-y-4">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
