@@ -1,0 +1,1 @@
+export default function Settings(){ return <h2>Ayarlar</h2>; }
